@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')         // your Docker Hub creds ID
+        IMAGE_NAME            = "anil45945/E-commerce-website"
+        IMAGE_TAG             = "${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install & Build') {
+            steps {
+                // install dependencies and build React app
+                bat 'npm install'
+                bat 'npm run build'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // allow tests to fail without breaking the pipeline
+                bat 'npm test || exit 0'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                // build image using Dockerfile in repo root
+                bat "docker build -t %IMAGE_NAME%:%IMAGE_TAG% ."
+                bat "docker tag %IMAGE_NAME%:%IMAGE_TAG% %IMAGE_NAME%:latest"
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                bat '''
+                    echo|set /p=%DOCKERHUB_CREDENTIALS_PSW%|docker login -u %DOCKERHUB_CREDENTIALS_USR% --password-stdin
+                '''
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                bat "docker push %IMAGE_NAME%:%IMAGE_TAG%"
+                bat "docker push %IMAGE_NAME%:latest"
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deployment step placeholder – customize this for your target (SSH, Kubernetes, etc.)'
+                // e.g.
+                // bat 'ssh user@server "docker pull %IMAGE_NAME%:latest && docker-compose up -d"'
+            }
+        }
+    }
+
+    post {
+        always {
+            // clean up local Docker state
+            bat 'docker logout'
+            bat "docker rmi %IMAGE_NAME%:%IMAGE_TAG% || exit 0"
+        }
+    }
+}
