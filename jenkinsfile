@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE_NAME = "react_ecommerce_frontend"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/Anilsarampati/reactjs.git'  // change if needed
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh 'docker build -t $DOCKER_IMAGE_NAME .'
+                }
+            }
+        }
+
+        stage('Run with Docker Compose') {
+            steps {
+                script {
+                    sh 'docker-compose down || true'  // clean up old containers
+                    sh 'docker-compose up -d'         // run in detached mode
+                }
+            }
+        }
+
+        stage('Check Running Containers') {
+            steps {
+                sh 'docker ps'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Build completed.'
+        }
+    }
+}
