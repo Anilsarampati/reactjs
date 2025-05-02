@@ -21,13 +21,12 @@ pipeline {
                 bat 'npm run build'
             }
         }
-
-        stage('Test') {
-            steps {
-                // allow tests to fail without breaking the pipeline
-                bat 'npm test || exit 0'
-            }
+        stage('My New Stage') {     // 🆕 Your simple new stage
+        steps {
+            bat 'echo This is my added stage!'
         }
+    }
+
 
         stage('Build Docker Image') {
             steps {
